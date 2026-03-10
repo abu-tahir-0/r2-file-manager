@@ -21,7 +21,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Search, Trash2, Upload, FolderOpen, Database } from "lucide-react";
+import { Search, Trash2, Upload, ChevronRight, Home, ArrowLeft, Database } from "lucide-react";
 
 interface FileToolbarProps {
   searchQuery: string;
@@ -31,11 +31,47 @@ interface FileToolbarProps {
   onUpload: () => void;
   deleting: boolean;
   prefix: string;
-  onPrefixChange: (prefix: string) => void;
+  onNavigate: (prefix: string) => void;
+  onNavigateUp: () => void;
   buckets: R2Bucket[];
   selectedBucket: string;
   onBucketChange: (bucket: string) => void;
   loadingBuckets: boolean;
+}
+
+function Breadcrumb({ prefix, onNavigate }: { prefix: string; onNavigate: (prefix: string) => void }) {
+  const parts = prefix ? prefix.replace(/\/$/, "").split("/") : [];
+
+  return (
+    <div className="flex items-center gap-1 text-sm flex-wrap">
+      <button
+        onClick={() => onNavigate("")}
+        className="flex items-center gap-1 rounded px-1.5 py-0.5 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+      >
+        <Home className="h-3.5 w-3.5" />
+        <span>Root</span>
+      </button>
+      {parts.map((part, i) => {
+        const path = parts.slice(0, i + 1).join("/") + "/";
+        const isLast = i === parts.length - 1;
+        return (
+          <div key={path} className="flex items-center gap-1">
+            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+            {isLast ? (
+              <span className="rounded px-1.5 py-0.5 font-medium">{part}</span>
+            ) : (
+              <button
+                onClick={() => onNavigate(path)}
+                className="rounded px-1.5 py-0.5 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+              >
+                {part}
+              </button>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 export function FileToolbar({
@@ -46,7 +82,8 @@ export function FileToolbar({
   onUpload,
   deleting,
   prefix,
-  onPrefixChange,
+  onNavigate,
+  onNavigateUp,
   buckets,
   selectedBucket,
   onBucketChange,
@@ -77,16 +114,6 @@ export function FileToolbar({
             placeholder="Search files..."
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="pl-9"
-          />
-        </div>
-
-        <div className="relative min-w-[200px]">
-          <FolderOpen className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Prefix / folder path..."
-            value={prefix}
-            onChange={(e) => onPrefixChange(e.target.value)}
             className="pl-9"
           />
         </div>
@@ -126,6 +153,16 @@ export function FileToolbar({
             </AlertDialogContent>
           </AlertDialog>
         )}
+      </div>
+
+      {/* Breadcrumb navigation */}
+      <div className="flex items-center gap-2 rounded-md border bg-card px-3 py-2">
+        {prefix && (
+          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onNavigateUp}>
+            <ArrowLeft className="h-3.5 w-3.5" />
+          </Button>
+        )}
+        <Breadcrumb prefix={prefix} onNavigate={onNavigate} />
       </div>
     </div>
   );

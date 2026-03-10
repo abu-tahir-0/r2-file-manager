@@ -47,25 +47,33 @@ export async function listFiles(
   bucket: string,
   prefix?: string,
   continuationToken?: string
-): Promise<{ files: R2File[]; nextToken?: string; totalFiles: number }> {
+): Promise<{ files: R2File[]; folders: string[]; nextToken?: string; totalFiles: number }> {
   const command = new ListObjectsV2Command({
     Bucket: bucket,
     Prefix: prefix || undefined,
+    Delimiter: "/",
     ContinuationToken: continuationToken || undefined,
     MaxKeys: 100,
   });
 
   const response = await r2Client.send(command);
 
-  const files: R2File[] = (response.Contents || []).map((obj) => ({
-    key: obj.Key!,
-    size: obj.Size || 0,
-    lastModified: obj.LastModified?.toISOString() || "",
-    etag: obj.ETag,
-  }));
+  const files: R2File[] = (response.Contents || [])
+    .filter((obj) => obj.Key !== prefix) // exclude the folder placeholder itself
+    .map((obj) => ({
+      key: obj.Key!,
+      size: obj.Size || 0,
+      lastModified: obj.LastModified?.toISOString() || "",
+      etag: obj.ETag,
+    }));
+
+  const folders: string[] = (response.CommonPrefixes || []).map(
+    (p) => p.Prefix!
+  );
 
   return {
     files,
+    folders,
     nextToken: response.NextContinuationToken,
     totalFiles: response.KeyCount || 0,
   };
@@ -125,6 +133,45 @@ export async function uploadFile(
     ContentType: contentType,
   });
   await r2Client.send(command);
+}
+
+export interface PrefixStats {
+  prefix: string;
+  totalSize: number;
+  fileCount: number;
+}
+
+export async function getPrefixStats(
+  bucket: string,
+  prefix: string
+): Promise<PrefixStats> {
+  let totalSize = 0;
+  let fileCount = 0;
+  let continuationToken: string | undefined;
+
+  do {
+    const command = new ListObjectsV2Command({
+      Bucket: bucket,
+      Prefix: prefix || undefined,
+      ContinuationToken: continuationToken,
+      MaxKeys: 1000,
+    });
+    const response = await r2Client.send(command);
+    for (const obj of response.Contents || []) {
+      totalSize += obj.Size || 0;
+      fileCount++;
+    }
+    continuationToken = response.NextContinuationToken;
+  } while (continuationToken);
+
+  return { prefix, totalSize, fileCount };
+}
+
+export async function getMultiplePrefixStats(
+  bucket: string,
+  prefixes: string[]
+): Promise<PrefixStats[]> {
+  return Promise.all(prefixes.map((p) => getPrefixStats(bucket, p)));
 }
 
 export async function getFileContent(

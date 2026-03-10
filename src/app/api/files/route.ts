@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const result = await listFiles(bucket, prefix, continuationToken);
+    const result = await listFiles(bucket, prefix || undefined, continuationToken || undefined);
 
     return NextResponse.json(result);
   } catch (error) {

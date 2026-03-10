@@ -31,11 +31,14 @@ import {
   FileText,
   FileVideo,
   FileArchive,
+  Folder,
   Loader2,
 } from "lucide-react";
 
 interface FileTableProps {
   files: R2File[];
+  folders: string[];
+  folderStats: Record<string, { totalSize: number; fileCount: number }>;
   loading: boolean;
   selectedKeys: Set<string>;
   sortField: SortField;
@@ -45,9 +48,11 @@ interface FileTableProps {
   onSelectFile: (key: string, checked: boolean) => void;
   onRename: (file: R2File) => void;
   onDelete: (key: string) => void;
+  onNavigate: (folderPrefix: string) => void;
   hasMore: boolean;
   onLoadMore: () => void;
   bucket: string;
+  prefix: string;
 }
 
 function formatSize(bytes: number): string {
@@ -107,8 +112,21 @@ function SortIcon({
   return <ArrowDown className="ml-1 h-3 w-3" />;
 }
 
+function getFolderName(folderPrefix: string, currentPrefix: string): string {
+  // Remove the current prefix to show relative name
+  const relative = folderPrefix.replace(currentPrefix, "");
+  // Remove trailing slash
+  return relative.replace(/\/$/, "");
+}
+
+function getFileName(key: string, currentPrefix: string): string {
+  return key.replace(currentPrefix, "");
+}
+
 export function FileTable({
   files,
+  folders,
+  folderStats,
   loading,
   selectedKeys,
   sortField,
@@ -118,9 +136,11 @@ export function FileTable({
   onSelectFile,
   onRename,
   onDelete,
+  onNavigate,
   hasMore,
   onLoadMore,
   bucket,
+  prefix,
 }: FileTableProps) {
   const allSelected =
     files.length > 0 && files.every((f) => selectedKeys.has(f.key));
@@ -181,7 +201,7 @@ export function FileTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {loading && files.length === 0 ? (
+          {loading && files.length === 0 && folders.length === 0 ? (
             <TableRow>
               <TableCell colSpan={5} className="h-32 text-center">
                 <div className="flex items-center justify-center gap-2 text-muted-foreground">
@@ -190,7 +210,7 @@ export function FileTable({
                 </div>
               </TableCell>
             </TableRow>
-          ) : files.length === 0 ? (
+          ) : files.length === 0 && folders.length === 0 ? (
             <TableRow>
               <TableCell colSpan={5} className="h-32 text-center">
                 <div className="text-muted-foreground">
@@ -199,7 +219,42 @@ export function FileTable({
               </TableCell>
             </TableRow>
           ) : (
-            files.map((file) => (
+            <>
+              {folders.map((folder) => {
+                const stats = folderStats[folder];
+                return (
+                <TableRow
+                  key={folder}
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => onNavigate(folder)}
+                >
+                  <TableCell>
+                    <div className="w-4" />
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Folder className="h-4 w-4 text-yellow-500 fill-yellow-500/20" />
+                      <span className="font-medium">
+                        {getFolderName(folder, prefix)}
+                      </span>
+                      {stats && (
+                        <Badge variant="outline" className="ml-1 text-xs font-normal text-muted-foreground">
+                          {stats.fileCount} file{stats.fileCount !== 1 ? "s" : ""}
+                        </Badge>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {stats ? formatSize(stats.totalSize) : (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    )}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">—</TableCell>
+                  <TableCell />
+                </TableRow>
+                );
+              })}
+              {files.map((file) => (
               <TableRow
                 key={file.key}
                 className={
@@ -220,7 +275,7 @@ export function FileTable({
                   <div className="flex items-center gap-2">
                     {getFileIcon(file.key)}
                     <span className="truncate max-w-md" title={file.key}>
-                      {file.key}
+                      {getFileName(file.key, prefix)}
                     </span>
                     {getExtBadge(file.key)}
                   </div>
@@ -266,6 +321,8 @@ export function FileTable({
                 </TableCell>
               </TableRow>
             ))
+            }
+            </>
           )}
         </TableBody>
       </Table>
