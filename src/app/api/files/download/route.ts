@@ -23,10 +23,14 @@ export async function GET(request: NextRequest) {
 
     const { body, contentType } = await getFileContent(bucket, key);
 
+    const filename = key.split("/").pop() || "download";
+    // RFC 5987 encoding for Content-Disposition to handle special characters safely
+    const encodedFilename = encodeURIComponent(filename).replace(/['()]/g, escape);
+
     return new NextResponse(body, {
       headers: {
         "Content-Type": contentType || "application/octet-stream",
-        "Content-Disposition": `attachment; filename="${key.split("/").pop()}"`,
+        "Content-Disposition": `attachment; filename="${filename.replace(/["\\]/g, "_")}"; filename*=UTF-8''${encodedFilename}`,
       },
     });
   } catch (error) {

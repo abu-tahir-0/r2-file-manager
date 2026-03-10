@@ -16,7 +16,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "bucket is required" }, { status: 400 });
     }
 
-    const key = path ? `${path}/${file.name}` : file.name;
+    // Normalize path: strip trailing slashes, avoid double slashes
+    const cleanPath = path?.replace(/\/+$/, "");
+    const key = cleanPath ? `${cleanPath}/${file.name}` : file.name;
     const buffer = Buffer.from(await file.arrayBuffer());
 
     await uploadFile(bucket, key, buffer, file.type);

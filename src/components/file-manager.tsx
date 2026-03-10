@@ -220,9 +220,11 @@ export default function FileManager() {
     return 0;
   });
 
-  const filteredFiles = sortedFiles.filter((f) =>
-    f.key.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredFiles = sortedFiles.filter((f) => {
+    // Search against the relative file name (what the user sees), not the full key
+    const relativeName = f.key.replace(prefix, "");
+    return relativeName.toLowerCase().includes(searchQuery.toLowerCase());
+  });
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {

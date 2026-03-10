@@ -9,9 +9,16 @@ import {
   ListBucketsCommand,
 } from "@aws-sdk/client-s3";
 
-const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID!;
-const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID!;
-const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY!;
+const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID;
+const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID;
+const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY;
+
+if (!R2_ACCOUNT_ID || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY) {
+  throw new Error(
+    "Missing required environment variables: R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY. " +
+    "Please copy .env.example to .env.local and fill in your Cloudflare R2 credentials."
+  );
+}
 
 export const r2Client = new S3Client({
   region: "auto",
@@ -108,7 +115,7 @@ export async function renameFile(
   // Copy to new key then delete old
   const copyCommand = new CopyObjectCommand({
     Bucket: bucket,
-    CopySource: `${bucket}/${oldKey}`,
+    CopySource: `${bucket}/${encodeURIComponent(oldKey).replace(/%2F/g, "/")}`,
     Key: newKey,
   });
   await r2Client.send(copyCommand);
