@@ -34,7 +34,7 @@ A modern, open-source web-based file manager for [Cloudflare R2](https://develop
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/r2-file-manager.git
+git clone https://github.com/abu-tahir-0/r2-file-manager
 cd r2-file-manager
 ```
 
