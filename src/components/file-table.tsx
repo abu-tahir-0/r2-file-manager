@@ -18,6 +18,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 import {
   ArrowUpDown,
   ArrowUp,
@@ -26,6 +27,7 @@ import {
   Pencil,
   Trash2,
   Download,
+  Link,
   File,
   FileImage,
   FileText,
@@ -53,6 +55,8 @@ interface FileTableProps {
   onLoadMore: () => void;
   bucket: string;
   prefix: string;
+  r2Endpoint: string;
+  publicDomain: string;
 }
 
 function formatSize(bytes: number): string {
@@ -141,7 +145,15 @@ export function FileTable({
   onLoadMore,
   bucket,
   prefix,
+  r2Endpoint,
+  publicDomain,
 }: FileTableProps) {
+  const getFileUrl = (key: string) => {
+    if (publicDomain) {
+      return `${publicDomain.replace(/\/$/, "")}/${key}`;
+    }
+    return `${r2Endpoint}/${bucket}/${key}`;
+  };
   const allSelected =
     files.length > 0 && files.every((f) => selectedKeys.has(f.key));
   const someSelected = files.some((f) => selectedKeys.has(f.key));
@@ -294,6 +306,16 @@ export function FileTable({
                       <MoreHorizontal className="h-4 w-4" />
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        onClick={() => {
+                          const url = getFileUrl(file.key);
+                          navigator.clipboard.writeText(url);
+                          toast.success("Link copied to clipboard", { description: url });
+                        }}
+                      >
+                        <Link className="mr-2 h-4 w-4" />
+                        Copy Link
+                      </DropdownMenuItem>
                       <DropdownMenuItem
                         onClick={() =>
                           window.open(

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -30,6 +30,13 @@ export function UploadDialog({
   const [path, setPath] = useState(currentPrefix);
   const [uploading, setUploading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Sync path with currentPrefix when dialog opens or prefix changes
+  useEffect(() => {
+    if (open) {
+      setPath(currentPrefix);
+    }
+  }, [open, currentPrefix]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

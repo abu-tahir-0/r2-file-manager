@@ -48,6 +48,8 @@ export default function FileManager() {
   const [buckets, setBuckets] = useState<R2Bucket[]>([]);
   const [selectedBucket, setSelectedBucket] = useState("");
   const [loadingBuckets, setLoadingBuckets] = useState(true);
+  const [r2Endpoint, setR2Endpoint] = useState("");
+  const [publicDomain, setPublicDomain] = useState("");
   const [files, setFiles] = useState<R2File[]>([]);
   const [folders, setFolders] = useState<string[]>([]);
   const [folderStats, setFolderStats] = useState<Record<string, { totalSize: number; fileCount: number }>>({});
@@ -72,6 +74,8 @@ export default function FileManager() {
         if (!res.ok) throw new Error("Failed to fetch buckets");
         const data = await res.json();
         setBuckets(data.buckets);
+        if (data.r2Endpoint) setR2Endpoint(data.r2Endpoint);
+        if (data.publicDomain) setPublicDomain(data.publicDomain);
         if (data.buckets.length > 0) {
           setSelectedBucket(data.buckets[0].name);
         }
@@ -474,6 +478,8 @@ export default function FileManager() {
           onLoadMore={handleLoadMore}
           bucket={selectedBucket}
           prefix={prefix}
+          r2Endpoint={r2Endpoint}
+          publicDomain={publicDomain}
         />
 
         <RenameDialog
